@@ -1,0 +1,261 @@
+<html>
+
+<head>
+    <meta charset="utf-8" />
+
+    <title>WebSocket Clinet</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <script src="https://unpkg.com/vue@next"></script>
+
+    <style type="text/css">
+        [v-cloak] {
+            display: none;
+        }
+
+        h1 {
+            margin-top: 0.8em;
+        }
+
+        body {
+            background: #ffffff;
+        }
+
+        button {
+            margin-right: 5px;
+        }
+
+        .message-area {
+            height: 40%;
+            padding: 1.5em;
+            overflow: auto;
+            margin-bottom: .5em;
+            border-radius: 5px;
+            border: 1px solid rgb(159, 159, 159);
+        }
+
+        .message {
+            width: 45%;
+            border-radius: 10px;
+            padding: .5em;
+            font-size: .8em;
+            overflow: auto;
+            word-wrap: break-word;
+        }
+
+        .sent-message {
+            background: #66ff00;
+            color: black;
+            margin-left: 55%;
+        }
+
+        .received-message {
+            background: #d8d8d8;
+            color: black;
+        }
+
+        .system-message {
+            background: #007bff;
+            color: white;
+            width: 100%;
+            margin: 10px auto;
+        }
+    </style>
+</head>
+
+<body onload="init()">
+    <div class="container">
+
+        <div id="app" v-cloak>
+            <h1>WebSocket Client</h1>
+            <section ref="messageArea" class="message-area">
+                <p v-for="message in messages" class="message"
+                    :class="{ 'sent-message': message.from === 'client', 'received-message': message.from === 'server', 'system-message': message.from === 'system' }">
+                    {{ message.date }}
+                    <br>
+                    {{ message.body }}
+                </p>
+            </section>
+
+            <p>Status : {{connectionStatus}}</p>
+            <p>Time : {{elapsedTime}}</p>
+
+            <form>
+                <div class="form-group">
+                    <input @keydown.enter.prevent="sendMessage" v-model="yourMessage" type="text" class="form-control"
+                        placeholder="message..." :disabled="badCondition"></input>
+                </div>
+                <button @click="sendMessage" id="sendBtn" type="button" class="btn btn-primary">Send</button>
+                <button @click="clearMessage" id="clearBtn" type="button" class="btn btn-secondary">Clear</button>
+            </form>
+
+            <hr>
+
+            <form>
+                <div class="form-group">
+                    <label for="serverURL">URL</label>
+                    <input @keydown.enter.prevent="connect" v-model="url" id="serverURL" type="text"
+                        class="form-control" placeholder="wss://..."></input>
+                </div>
+                <div>
+                    <button @click="connect" id="connectBtn" type="button" class="btn btn-primary">Connect</button>
+                    <button @click="disconnect" id="disconnectBtn" type="button"
+                        class="btn btn-secondary">Disconnect</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+<script type="text/javascript">
+    function zeroPadding(num, length) {
+        return (Array(length).join('0') + num).slice(-length);
+    }
+
+    function getNow() {
+        const date = new Date();
+        return zeroPadding(date.getFullYear(), 4) + "/" +
+            zeroPadding((date.getMonth() + 1), 2) + "/" +
+            zeroPadding(date.getDate(), 2) + " " +
+            zeroPadding(date.getHours(), 2) + ":" +
+            zeroPadding(date.getMinutes(), 2) + ":" +
+            zeroPadding(date.getSeconds(), 2) + ":" +
+            zeroPadding(date.getMilliseconds(), 3);
+    }
+
+    function init() {
+
+        const app = {
+            data() {
+                return {
+                    connectionStatus: "",
+                    conn: null,
+                    url: "wss://echo.websocket.org",
+                    elapsedTime: "0h0m0s",
+                    startTimeMSec: 0,
+                    endTimeMSec: 0,
+                    intervalTimer: 0,
+                    messages: [],
+                    yourMessage: "",
+                    badCondition: true
+                }
+            },
+            methods: {
+                connect() {
+                    console.log("connect");
+                    if (!this.conn) {
+                        this.conn = new WebSocket(this.url)
+
+                        this.conn.onopen = (event) => {
+                            this.onOpenListener(`Connected: ${this.url}`)
+                        }
+                        this.conn.onclose = (event) => {
+                            this.onCloseListener(`Disconnected: ${this.url} (code:${event.code} reason:${event.reason})`)
+                        }
+                        this.conn.onerror = (event) => {
+                            console.error("WebSocket error observed:", event);
+                            this.onErrorListener(`Error: ${this.url}`);
+                        }
+                        this.conn.onmessage = (msg) => {
+                            this.onMessageListener(msg.data)
+                        }
+                        this.clearMessage();
+                    }
+                },
+                disconnect() {
+                    console.log("disconnect");
+                    if (this.conn) {
+                        this.conn.close(1000, "close ok");
+                        this.stopTime();
+                    }
+                    this.conn = null;
+                },
+                onOpenListener(msg) {
+                    console.log("onOpen");
+                    this.connectionStatus = msg;
+                    this.startTime();
+                    this.badCondition = false;
+                    this.addMessage("Connected!!", "system");
+                },
+                onCloseListener(msg) {
+                    console.log("onClose");
+                    this.yourMessage = "";
+                    this.badCondition = true;
+                    this.stopTime();
+                    this.connectionStatus = msg;
+                    this.conn = null;
+                    this.addMessage("Disconnected!!", "system");
+                },
+                onMessageListener(msg) {
+                    console.log("onMessage");
+                    this.addMessage(msg, "server");
+                },
+                onErrorListener(msg) {
+                    console.log("onError");
+                    this.yourMessage = "";
+                    this.badCondition = true;
+                    this.stopTime();
+                    this.connectionStatus = msg;
+                    this.conn = null;
+                    this.addMessage("Error!!", "system");
+                },
+                sendMessage() {
+                    console.log("sendMessage");
+                    if (this.conn) {
+                        this.conn.send(this.yourMessage);
+                        this.addMessage(this.yourMessage, "client");
+                    }
+                },
+                clearMessage() {
+                    console.log("clearMessage")
+                    this.messages = [];
+                },
+                addMessage(msg, from) {
+                    let message = {
+                        date: getNow(),
+                        body: msg,
+                        from: from
+                    }
+                    this.messages.push(message);
+                    Vue.nextTick(() => {
+                        let messageArea = this.$refs.messageArea;
+                        messageArea.scrollTop = messageArea.scrollHeight;
+                    })
+                },
+                startTime() {
+                    this.startTimeMSec = performance.now();
+                    this.endTimeMSec = this.startTimeMSec;
+                    this.intervalTimer = setInterval(this.updateTime, 1000);
+                },
+                updateTime() {
+                    this.endTimeMSec = performance.now();
+                    const t = parseInt((this.endTimeMSec - this.startTimeMSec) / 1000, 10);
+                    const h = t / 3600 | 0;
+                    const m = t % 3600 / 60 | 0;
+                    const s = t % 60;
+                    this.elapsedTime = h + "h" + m + "m" + s + "s";
+                },
+                stopTime() {
+                    this.updateTime();
+                    clearInterval(this.intervalTimer);
+                }
+            }
+        }
+
+        Vue.createApp(app).mount('#app')
+    }
+
+</script>
+
+</html>

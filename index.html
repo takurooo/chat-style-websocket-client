@@ -1,261 +1,334 @@
 <html>
-
-<head>
+  <head>
     <meta charset="utf-8" />
 
     <title>WebSocket Clinet</title>
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
-        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
-        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
-        crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
-        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
-        crossorigin="anonymous"></script>
+    <link
+      href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,500,700,900"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@4.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.min.css"
+      rel="stylesheet"
+    />
 
-    <script src="https://unpkg.com/vue@next"></script>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, minimal-ui"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.x/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
+
+    <!-- Vuetify for Material Design Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@5.x/css/materialdesignicons.min.css"
+      rel="stylesheet"
+    />
+    <!-- Vuetify for Material Icons -->
+    <link
+      href="https://fonts.googleapis.com/css?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <!-- Vuetify for Font Awesome 4 Icons -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/font-awesome@4.x/css/font-awesome.min.css"
+      rel="stylesheet"
+    />
 
     <style type="text/css">
-        [v-cloak] {
-            display: none;
-        }
+      [v-cloak] {
+        display: none;
+      }
 
-        h1 {
-            margin-top: 0.8em;
-        }
+      .message-area {
+        height: 320px;
+        padding: 1.5em;
+        overflow: auto;
+        margin: 0.5em;
+        border-radius: 5px;
+        border: 1px solid rgb(159, 159, 159);
+      }
 
-        body {
-            background: #ffffff;
-        }
+      .message {
+        width: 45%;
+        border-radius: 10px;
+        padding: 0.5em;
+        margin-bottom: 0.5em;
+        font-size: 0.8em;
+        overflow: auto;
+        word-wrap: break-word;
+      }
 
-        button {
-            margin-right: 5px;
-        }
+      .sent-message {
+        background: #66ff00;
+        color: black;
+        margin-left: 55%;
+      }
 
-        .message-area {
-            height: 40%;
-            padding: 1.5em;
-            overflow: auto;
-            margin-bottom: .5em;
-            border-radius: 5px;
-            border: 1px solid rgb(159, 159, 159);
-        }
+      .received-message {
+        background: #d8d8d8;
+        color: black;
+      }
 
-        .message {
-            width: 45%;
-            border-radius: 10px;
-            padding: .5em;
-            font-size: .8em;
-            overflow: auto;
-            word-wrap: break-word;
-        }
-
-        .sent-message {
-            background: #66ff00;
-            color: black;
-            margin-left: 55%;
-        }
-
-        .received-message {
-            background: #d8d8d8;
-            color: black;
-        }
-
-        .system-message {
-            background: #007bff;
-            color: white;
-            width: 100%;
-            margin: 10px auto;
-        }
+      .system-message {
+        background: #007bff;
+        color: white;
+        width: 100%;
+        margin: 10px auto;
+      }
     </style>
-</head>
+  </head>
 
-<body onload="init()">
-    <div class="container">
+  <body onload="init()">
+    <div id="app" v-cloak>
+      <v-app>
+        <v-toolbar max-height="60px" dark color="primary darken-1">
+          <v-toolbar-title>WebSocket Client</v-toolbar-title>
+        </v-toolbar>
+        <v-content>
+          <v-container fluid fill-height>
+            <v-layout align-center justify-center>
+              <!-- <v-flex xs12 sm8 md4> -->
 
-        <div id="app" v-cloak>
-            <h1>WebSocket Client</h1>
-            <section ref="messageArea" class="message-area">
-                <p v-for="message in messages" class="message"
-                    :class="{ 'sent-message': message.from === 'client', 'received-message': message.from === 'server', 'system-message': message.from === 'system' }">
-                    {{ message.date }}
-                    <br>
-                    {{ message.body }}
-                </p>
-            </section>
+              <v-flex>
+                <v-alert v-if="hasWebSocket" dense text type="success">
+                  <strong>This browser supports WebSocket</strong>
+                </v-alert>
+                <v-alert v-else dense outlined type="error">
+                  <strong>This browser does not support WebSocket</strong>
+                </v-alert>
 
-            <p>Status : {{connectionStatus}}</p>
-            <p>Time : {{elapsedTime}}</p>
-
-            <form>
-                <div class="form-group">
-                    <input @keydown.enter.prevent="sendMessage" v-model="yourMessage" type="text" class="form-control"
-                        placeholder="message..." :disabled="badCondition"></input>
+                <div ref="messageArea" class="message-area">
+                  <div
+                    v-for="(message, index) in messages"
+                    class="message"
+                    :class="{ 'sent-message': message.from === 'client', 'received-message': message.from === 'server', 'system-message': message.from === 'system' }"
+                  >
+                    <span class="text-body-2">{{ message.date }}</span>
+                    <br />
+                    <span class="text-body-1">{{ message.body }}</span>
+                  </div>
                 </div>
-                <button @click="sendMessage" id="sendBtn" type="button" class="btn btn-primary">Send</button>
-                <button @click="clearMessage" id="clearBtn" type="button" class="btn btn-secondary">Clear</button>
-            </form>
 
-            <hr>
+                <div class="pt-3">
+                  <p class="text-body-1">Status : {{connectionStatus}}</p>
+                  <p class="text-body-1">Time : {{elapsedTime}}</p>
+                </div>
 
-            <form>
-                <div class="form-group">
-                    <label for="serverURL">URL</label>
-                    <input @keydown.enter.prevent="connect" v-model="url" id="serverURL" type="text"
-                        class="form-control" placeholder="wss://..."></input>
-                </div>
-                <div>
-                    <button @click="connect" id="connectBtn" type="button" class="btn btn-primary">Connect</button>
-                    <button @click="disconnect" id="disconnectBtn" type="button"
-                        class="btn btn-secondary">Disconnect</button>
-                </div>
-            </form>
-        </div>
+                <v-form>
+                  <v-text-field
+                    @keydown.enter.prevent="sendMessage"
+                    v-model="yourMessage"
+                    label="message"
+                    :disabled="badCondition"
+                    clearable
+                  ></v-text-field>
+                  <v-btn
+                    color="indigo"
+                    dark
+                    rounded
+                    elevation="5"
+                    @click="sendMessage"
+                  >
+                    <v-icon left> send </v-icon>
+                    Send
+                  </v-btn>
+                </v-form>
+
+                <v-form class="my-8">
+                  <v-text-field
+                    @keydown.enter.prevent="connect"
+                    v-model="url"
+                    id="serverURL"
+                    label="URL"
+                    placeholder="wss://..."
+                    clearable
+                  ></v-text-field>
+                  <v-btn
+                    class="mr-2"
+                    color="indigo"
+                    dark
+                    elevation="5"
+                    @click="connect"
+                  >
+                    <v-icon left> wifi_protected_setup </v-icon>
+                    Connect
+                  </v-btn>
+                  <v-btn dark elevation="5" @click="disconnect">
+                    <v-icon left> mdi-cancel </v-icon>
+                    Disconnect
+                  </v-btn>
+                </v-form>
+              </v-flex>
+            </v-layout>
+          </v-container>
+        </v-content>
+      </v-app>
     </div>
-</body>
+  </body>
 
-<script type="text/javascript">
+  <script type="text/javascript">
     function zeroPadding(num, length) {
-        return (Array(length).join('0') + num).slice(-length);
+      return (Array(length).join("0") + num).slice(-length);
     }
 
     function getNow() {
-        const date = new Date();
-        return zeroPadding(date.getFullYear(), 4) + "/" +
-            zeroPadding((date.getMonth() + 1), 2) + "/" +
-            zeroPadding(date.getDate(), 2) + " " +
-            zeroPadding(date.getHours(), 2) + ":" +
-            zeroPadding(date.getMinutes(), 2) + ":" +
-            zeroPadding(date.getSeconds(), 2) + ":" +
-            zeroPadding(date.getMilliseconds(), 3);
+      const date = new Date();
+      return (
+        zeroPadding(date.getFullYear(), 4) +
+        "/" +
+        zeroPadding(date.getMonth() + 1, 2) +
+        "/" +
+        zeroPadding(date.getDate(), 2) +
+        " " +
+        zeroPadding(date.getHours(), 2) +
+        ":" +
+        zeroPadding(date.getMinutes(), 2) +
+        ":" +
+        zeroPadding(date.getSeconds(), 2) +
+        ":" +
+        zeroPadding(date.getMilliseconds(), 3)
+      );
     }
 
     function init() {
+      new Vue({
+        el: "#app",
+        vuetify: new Vuetify(),
+        data() {
+          return {
+            connectionStatus: "",
+            conn: null,
+            url: "wss://echo.websocket.org",
+            elapsedTime: "0h0m0s",
+            startTimeMSec: 0,
+            endTimeMSec: 0,
+            intervalTimer: 0,
+            messages: [],
+            yourMessage: "",
+            badCondition: true,
+            hasWebSocket: false,
+          };
+        },
+        mounted: function () {
+          if (window["WebSocket"]) {
+            this.hasWebSocket = true;
+          } else {
+            this.hasWebSocket = false;
+          }
+        },
+        methods: {
+          connect() {
+            console.log("connect");
+            if (!this.conn) {
+              this.conn = new WebSocket(this.url);
 
-        const app = {
-            data() {
-                return {
-                    connectionStatus: "",
-                    conn: null,
-                    url: "wss://echo.websocket.org",
-                    elapsedTime: "0h0m0s",
-                    startTimeMSec: 0,
-                    endTimeMSec: 0,
-                    intervalTimer: 0,
-                    messages: [],
-                    yourMessage: "",
-                    badCondition: true
-                }
-            },
-            methods: {
-                connect() {
-                    console.log("connect");
-                    if (!this.conn) {
-                        this.conn = new WebSocket(this.url)
-
-                        this.conn.onopen = (event) => {
-                            this.onOpenListener(`Connected: ${this.url}`)
-                        }
-                        this.conn.onclose = (event) => {
-                            this.onCloseListener(`Disconnected: ${this.url} (code:${event.code} reason:${event.reason})`)
-                        }
-                        this.conn.onerror = (event) => {
-                            console.error("WebSocket error observed:", event);
-                            this.onErrorListener(`Error: ${this.url}`);
-                        }
-                        this.conn.onmessage = (msg) => {
-                            this.onMessageListener(msg.data)
-                        }
-                        this.clearMessage();
-                    }
-                },
-                disconnect() {
-                    console.log("disconnect");
-                    if (this.conn) {
-                        this.conn.close(1000, "close ok");
-                        this.stopTime();
-                    }
-                    this.conn = null;
-                },
-                onOpenListener(msg) {
-                    console.log("onOpen");
-                    this.connectionStatus = msg;
-                    this.startTime();
-                    this.badCondition = false;
-                    this.addMessage("Connected!!", "system");
-                },
-                onCloseListener(msg) {
-                    console.log("onClose");
-                    this.yourMessage = "";
-                    this.badCondition = true;
-                    this.stopTime();
-                    this.connectionStatus = msg;
-                    this.conn = null;
-                    this.addMessage("Disconnected!!", "system");
-                },
-                onMessageListener(msg) {
-                    console.log("onMessage");
-                    this.addMessage(msg, "server");
-                },
-                onErrorListener(msg) {
-                    console.log("onError");
-                    this.yourMessage = "";
-                    this.badCondition = true;
-                    this.stopTime();
-                    this.connectionStatus = msg;
-                    this.conn = null;
-                    this.addMessage("Error!!", "system");
-                },
-                sendMessage() {
-                    console.log("sendMessage");
-                    if (this.conn) {
-                        this.conn.send(this.yourMessage);
-                        this.addMessage(this.yourMessage, "client");
-                    }
-                },
-                clearMessage() {
-                    console.log("clearMessage")
-                    this.messages = [];
-                },
-                addMessage(msg, from) {
-                    let message = {
-                        date: getNow(),
-                        body: msg,
-                        from: from
-                    }
-                    this.messages.push(message);
-                    Vue.nextTick(() => {
-                        let messageArea = this.$refs.messageArea;
-                        messageArea.scrollTop = messageArea.scrollHeight;
-                    })
-                },
-                startTime() {
-                    this.startTimeMSec = performance.now();
-                    this.endTimeMSec = this.startTimeMSec;
-                    this.intervalTimer = setInterval(this.updateTime, 1000);
-                },
-                updateTime() {
-                    this.endTimeMSec = performance.now();
-                    const t = parseInt((this.endTimeMSec - this.startTimeMSec) / 1000, 10);
-                    const h = t / 3600 | 0;
-                    const m = t % 3600 / 60 | 0;
-                    const s = t % 60;
-                    this.elapsedTime = h + "h" + m + "m" + s + "s";
-                },
-                stopTime() {
-                    this.updateTime();
-                    clearInterval(this.intervalTimer);
-                }
+              this.conn.onopen = (event) => {
+                this.onOpenListener(`Connected: ${this.url}`);
+              };
+              this.conn.onclose = (event) => {
+                this.onCloseListener(
+                  `Disconnected: ${this.url} (code:${event.code} reason:${event.reason})`
+                );
+              };
+              this.conn.onerror = (event) => {
+                console.error("WebSocket error observed:", event);
+                this.onErrorListener(`Error: ${this.url}`);
+              };
+              this.conn.onmessage = (msg) => {
+                this.onMessageListener(msg.data);
+              };
+              this.clearMessage();
             }
-        }
-
-        Vue.createApp(app).mount('#app')
+          },
+          disconnect() {
+            console.log("disconnect");
+            if (this.conn) {
+              this.conn.close(1000, "close ok");
+              this.stopTime();
+            }
+            this.conn = null;
+          },
+          onOpenListener(msg) {
+            console.log("onOpen");
+            this.connectionStatus = msg;
+            this.startTime();
+            this.badCondition = false;
+            this.addMessage("Connected!!", "system");
+          },
+          onCloseListener(msg) {
+            console.log("onClose");
+            this.yourMessage = "";
+            this.badCondition = true;
+            this.stopTime();
+            this.connectionStatus = msg;
+            this.conn = null;
+            this.addMessage("Disconnected!!", "system");
+          },
+          onMessageListener(msg) {
+            console.log("onMessage");
+            this.addMessage(msg, "server");
+          },
+          onErrorListener(msg) {
+            console.log("onError");
+            this.yourMessage = "";
+            this.badCondition = true;
+            this.stopTime();
+            this.connectionStatus = msg;
+            this.conn = null;
+            this.addMessage("Error!!", "system");
+          },
+          sendMessage() {
+            console.log("sendMessage");
+            if (this.conn) {
+              this.conn.send(this.yourMessage);
+              this.addMessage(this.yourMessage, "client");
+            }
+          },
+          clearMessage() {
+            console.log("clearMessage");
+            this.messages = [];
+          },
+          addMessage(msg, from) {
+            let message = {
+              date: getNow(),
+              body: msg,
+              from: from,
+            };
+            this.messages.push(message);
+            Vue.nextTick(() => {
+              let messageArea = this.$refs.messageArea;
+              messageArea.scrollTop = messageArea.scrollHeight;
+            });
+          },
+          startTime() {
+            this.startTimeMSec = performance.now();
+            this.endTimeMSec = this.startTimeMSec;
+            this.intervalTimer = setInterval(this.updateTime, 1000);
+          },
+          updateTime() {
+            this.endTimeMSec = performance.now();
+            const t = parseInt(
+              (this.endTimeMSec - this.startTimeMSec) / 1000,
+              10
+            );
+            const h = (t / 3600) | 0;
+            const m = ((t % 3600) / 60) | 0;
+            const s = t % 60;
+            this.elapsedTime = h + "h" + m + "m" + s + "s";
+          },
+          stopTime() {
+            this.updateTime();
+            clearInterval(this.intervalTimer);
+          },
+        },
+      });
     }
-
-</script>
-
+  </script>
 </html>
